@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Services\Formula\FormulaService;
+use App\Services\Formula\FormulaEvaluator;
 use App\Http\Requests\StoreFormulaRequest;
 use App\Services\Formula\ExpressionTreeService;
 use App\Models\Formula;
@@ -83,12 +84,15 @@ class FormulController extends Controller
     // }
     public function show()
     {
-        $formula = Formula::find(1);
+        $formula = Formula::find(6);
+        $expression = ExpressionTreeService::toExpression($formula->expression_json);
         return response()->json([
             'id' => $formula->id,
-            'name' => $formula->name,
-            'code' => $formula->code,
+            'window_type' => $formula->windowType->name,
+            'title' => $formula->resultVariable->title,
+            'code' => $formula->resultVariable->code,
             'tokens' => ExpressionTreeService::toTokens($formula->expression_json),
+            'expression' => "{$formula->resultVariable->code} = {$expression}",
         ]);
     }
 
@@ -139,4 +143,26 @@ class FormulController extends Controller
     //     }
     //   ]
     // }
+
+    public function calc(){
+        $formula = Formula::findOrFail(3);
+
+        $variables = [
+            // 1 => 1200,
+            4 => 2,
+            8 => 1,
+            9 => 9,
+            10 => 3,
+            7 => 4,
+            // 4 => 50000,
+        ];
+
+        $result = app(FormulaEvaluator::class)
+                    ->evaluate(
+                        $formula->expression_json,
+                        $variables
+                    );
+
+        dd($result);
+    }
 }

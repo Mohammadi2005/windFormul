@@ -8,8 +8,6 @@ class Formula extends Model
 {
     protected $fillable = [
         'window_type_id',
-        'name',
-        'code',
         'output_variable_id',
         'expression_json',
         'execution_order',
@@ -27,5 +25,18 @@ class Formula extends Model
             ->where('window_type_id', $windowTypeId)
             ->where('is_active', 1)
             ->first();
+    }
+
+    public function resultVariable(){
+        return $this->hasone(variable::class, 'id', 'output_variable_id');
+    }
+
+    public function windowType(){
+        return $this->hasone(windowType::class, 'id', 'window_type_id');
+    }
+
+    public function dependencies()
+    {
+        return $this->hasMany(FormulaDependency::class);
     }
 }
