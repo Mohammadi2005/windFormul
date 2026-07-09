@@ -8,7 +8,7 @@
 // class FormulaService
 // {
 //     public function __construct(
-//         protected FormulaValidator $validator,
+//         protected SyntaxValidator $validator,
 //         protected ShuntingYard $shuntingYard,
 //         protected AstBuilder $astBuilder
 //     ) {

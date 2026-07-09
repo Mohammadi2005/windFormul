@@ -13,6 +13,7 @@ class ShuntingYard
 
     public function convert(array $tokens): array
     {
+        // برای تبدیل به output , stack نیاز داریم
         $output = [];
         $stack = [];
 
@@ -20,11 +21,14 @@ class ShuntingYard
 
             switch ($token['type']) {
 
+                // اعداد و متغییر ها توی output ریخته میشن
                 case 'variable':
                 case 'number':
                     $output[] = $token;
                     break;
 
+                // وقتی توی عبارت به عملگر میرسیم ، تا زمانی که پشته خالی نشده و ایتم بالای پشته یک عملگر هست
+                // و اولویت اون عملگر بیشتر مساوی عملگر جدید هست عملگر رو از روی پشته برمی داریم
                 case 'operator':
 
                     while (
@@ -39,12 +43,15 @@ class ShuntingYard
 
                     break;
 
+                // اگر در عبارت بع پرانتز باز برسیم میزاریمش تو پشته
                 case 'left_parenthesis':
 
                     $stack[] = $token;
 
                     break;
 
+                // اگر توی عبارت به پرانتز بسته برسیم تا زمانی که توی
+                // پشته به پرانتز باز برسیم عملگر ها رو از پشته برمیداریم
                 case 'right_parenthesis':
 
                     while (
@@ -60,10 +67,12 @@ class ShuntingYard
             }
         }
 
+        // وقتی که عبارت تموم بشه هر چی توی پشته کمونده باشه رو میریزم تو output
         while (!empty($stack)) {
             $output[] = array_pop($stack);
         }
 
+        // حالا عبارت با فرمت postfix اماده هست
         return $output;
     }
 }

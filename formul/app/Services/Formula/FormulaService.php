@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 class FormulaService
 {
     public function __construct(
-        protected FormulaValidator $validator,
+        protected SyntaxValidator $validator,
         protected ShuntingYard $shuntingYard,
         protected AstBuilder $astBuilder,
         protected DependencyExtractor $dependencyExtractor,
@@ -20,7 +20,7 @@ class FormulaService
     {
         return DB::transaction(function () use ($data) {
             
-            // اعتبارسنجی Token ها
+            // Syntax Validator for token 
             $this->validator->validate($data['tokens']);
 
             // Infix -> Postfix
@@ -33,8 +33,6 @@ class FormulaService
             $dependencies = $this->dependencyExtractor->extract($ast);
 
             $formula = Formula::create([
-                // 'name' => $data['name'],
-                // 'code' => $data['code'],
                 'window_type_id' => $data['window_type_id'],
                 'output_variable_id' => $data['output_variable_id'],
                 'expression_json' => $ast,

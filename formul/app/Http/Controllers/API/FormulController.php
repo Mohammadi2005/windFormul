@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 
 class FormulController extends Controller
 {
+    // create object from class FormulaService with Dependency Injection opstion
     public function store(StoreFormulaRequest $request, FormulaService $service)
     {
         $formula = $service->create($request->validated());
