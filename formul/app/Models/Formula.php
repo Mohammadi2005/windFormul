@@ -16,6 +16,7 @@ class Formula extends Model
 
     protected $casts = [
         'expression_json' => 'array',
+        'condition_json' => 'array',
         'is_active' => 'boolean',
     ];
 

@@ -22,9 +22,9 @@ class FormulaEvaluator
                 }
 
                 return $variables[$id];
-
+    
             case 'operator':
-
+    
                 $left = $this->evaluate($node['left'], $variables);
 
                 $right = $this->evaluate($node['right'], $variables);

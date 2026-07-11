@@ -4,85 +4,25 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Services\Formula\FormulaService;
+use App\Services\Condition\ConditionService;
 use App\Services\Formula\FormulaEvaluator;
 use App\Http\Requests\StoreFormulaRequest;
 use App\Services\Formula\ExpressionTreeService;
 use App\Models\Formula;
+use App\Services\Condition\ConditionEvaluator;
+use Illuminate\Support\Facades\DB;
 
 use Illuminate\Http\Request;
 
 class FormulController extends Controller
 {
-    // create object from class FormulaService with Dependency Injection opstion
-    public function store(StoreFormulaRequest $request, FormulaService $service)
+    // create object from FormulaService class with Dependency Injection opstion
+    public function store(StoreFormulaRequest $request, FormulaService $formulaService)
     {
-        $formula = $service->create($request->validated());
+        $formula = $formulaService->create($request->validated());
         return response()->json($formula);
     }
 
-    // ورودی 
-
-    //     "window_type_id": 1,
-    //     "name": "Glass Area",
-    //     "code": "GA",
-    //     "output_variable_id": 1,
-    //     "execution_order": 1,
-    //     "tokens": [
-    //         { "type": "left_parenthesis" },
-    //         { "type": "left_parenthesis" },
-    //         { "type": "variable", "variable_id": 2 },
-    //         { "type": "operator", "value": "+" },
-    //         { "type": "variable", "variable_id": 3 },
-    //         { "type": "right_parenthesis" },
-    //         { "type": "operator", "value": "*" },
-    //         { "type": "variable", "variable_id": 2 },
-    //         { "type": "right_parenthesis" },
-    //         { "type": "operator", "value": "-" },
-    //         { "type": "variable", "variable_id": 3 }
-    //     ]
-    // }
-
-    // خروجی 
-
-    //   {
-    //   "name": "Glass Area",
-    //   "code": "GA",
-    //   "window_type_id": 1,
-    //   "output_variable_id": 1,
-    //   "expression_json": {
-    //     "type": "operator",
-    //     "operator": "-",
-    //     "left": {
-    //       "type": "operator",
-    //       "operator": "*",
-    //       "left": {
-    //         "type": "operator",
-    //         "operator": "+",
-    //         "left": {
-    //           "type": "variable",
-    //           "variable_id": 2
-    //         },
-    //         "right": {
-    //           "type": "variable",
-    //           "variable_id": 3
-    //         }
-    //       },
-    //       "right": {
-    //         "type": "variable",
-    //         "variable_id": 2
-    //       }
-    //     },
-    //     "right": {
-    //       "type": "variable",
-    //       "variable_id": 3
-    //     }
-    //   },
-    //   "execution_order": 1,
-    //   "is_active": true,
-    //   "updated_at": "2026-07-03T19:13:11.000000Z",
-    //   "created_at": "2026-07-03T19:13:11.000000Z",
-    //   "id": 1
-    // }
     public function show()
     {
         $formula = Formula::find(6);
@@ -97,73 +37,88 @@ class FormulController extends Controller
         ]);
     }
 
-    //     {
-    //   "id": 1,
-    //   "name": "Glass Area",
-    //   "code": "GA",
-    //   "tokens": [
-    //     {
-    //       "type": "left_parenthesis"
-    //     },
-    //     {
-    //       "type": "left_parenthesis"
-    //     },
-    //     {
-    //       "type": "variable",
-    //       "variable_id": 2
-    //     },
-    //     {
-    //       "type": "operator",
-    //       "value": "+"
-    //     },
-    //     {
-    //       "type": "variable",
-    //       "variable_id": 3
-    //     },
-    //     {
-    //       "type": "right_parenthesis"
-    //     },
-    //     {
-    //       "type": "operator",
-    //       "value": "*"
-    //     },
-    //     {
-    //       "type": "variable",
-    //       "variable_id": 2
-    //     },
-    //     {
-    //       "type": "right_parenthesis"
-    //     },
-    //     {
-    //       "type": "operator",
-    //       "value": "-"
-    //     },
-    //     {
-    //       "type": "variable",
-    //       "variable_id": 3
-    //     }
-    //   ]
-    // }
-
     public function calc(){
         $formula = Formula::findOrFail(3);
 
         $variables = [
-            // 1 => 1200,
-            4 => 2,
+            4 => 22,
             8 => 1,
             9 => 9,
             10 => 3,
-            7 => 4,
-            // 4 => 50000,
+            7 => 2,
         ];
 
-        $result = app(FormulaEvaluator::class)
-                    ->evaluate(
-                        $formula->expression_json,
-                        $variables
-                    );
+        $evaluator = new FormulaEvaluator(); 
+        $result = $evaluator->evaluate($formula->expression_json, $variables);
 
         dd($result);
+    }
+
+    // دریافت ورودی پروژه.
+    // بارگذاری فرمول‌ها.
+    // انتخاب فرمول‌های فعال بر اساس شرط‌ها.
+    // ساخت گراف وابستگی و مرتب‌سازی.
+    // اجرای محاسبات برای هر سکشن.
+    // ذخیره نتایج.
+    public function calculate(Request $request): array
+    {
+        $sections = $request->sections;
+        // dd($project);
+        $conditionEvaluator = new ConditionEvaluator();
+        $formulaEvaluator = new FormulaEvaluator();
+
+
+        $result = [];
+
+        foreach ($sections as $section) {
+
+            $variables = $section['variables'];
+
+            $context = [
+                'i'   => $section['i'],
+                'j'   => $section['j'],
+                'max' => $request->rows,
+            ];
+
+
+            // تمام فرمول‌هایی که خروجی آن‌ها متغیر شماره 1 است
+            $formulas = Formula::where('window_type_id', $request->window_type_id)
+                ->where('output_variable_id', 1)
+                ->where('is_active', true)
+                ->orderBy('execution_order')
+                ->get();
+
+            $value = null;
+
+            foreach ($formulas as $formula) {
+
+
+                
+                $condition = $conditionEvaluator->evaluate(
+                    $formula->condition_json,
+                    $context
+                );
+
+                if (!$condition) {
+                    continue;
+                }
+
+                $value = $formulaEvaluator->evaluate(
+                    $formula->expression_json,
+                    $variables
+                );
+
+                // اولین فرمول معتبر اجرا می‌شود
+                break;
+            }
+
+            $result[] = [
+                'i' => $section['i'],
+                'j' => $section['j'],
+                'value' => $value,
+            ];
+        }
+
+        return $result;
     }
 }

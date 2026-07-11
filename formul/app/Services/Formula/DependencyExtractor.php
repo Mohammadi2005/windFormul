@@ -17,10 +17,13 @@ class DependencyExtractor
     {
         switch ($node['type']) {
 
+            // گره‌های متغیر وابستگی‌های ورودی فرمول رو نشون میدن که ایدیشون رو نگهمیدارم
             case 'variable':
                 $variables[] = $node['variable_id'];
                 return;
 
+            // گره‌های عملگر مستقیماً متغیرها رو ندارن 
+            // هر دو گره فرزند را به صورت بازگشتی پیمایش می کنم تا متغییر های وابسته رو جمع‌آوری کنم.
             case 'operator':
                 $this->walk($node['left'], $variables);
                 $this->walk($node['right'], $variables);
