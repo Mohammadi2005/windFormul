@@ -11,6 +11,8 @@ class Formula extends Model
         'output_variable_id',
         'expression_json',
         'execution_order',
+        'expression_text',
+        'execution_text',
         'is_active',
     ];
 

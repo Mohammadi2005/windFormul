@@ -30,7 +30,6 @@ class ConditionEvaluator
             case 'operator':
 
                 $left = $this->evaluate($node['left'], $context);
-
                 $right = $this->evaluate($node['right'], $context);
 
                 return $this->calculate(
@@ -55,41 +54,33 @@ class ConditionEvaluator
         return match ($operator) {
 
             '==' => $left == $right,
-
             '!=' => $left != $right,
-
             '>'  => $left > $right,
-
             '>=' => $left >= $right,
-
             '<'  => $left < $right,
-
             '<=' => $left <= $right,
-
             'AND' => (bool)$left && (bool)$right,
-
             'OR'  => (bool)$left || (bool)$right,
 
             default => throw new Exception("Unknown operator {$operator}")
         };
     }
 
-    /**
-     * Resolve constants such as max, min, ...
-     */
+
     protected function resolveConstant(
         string $constant,
         array $context
     ): mixed {
 
-
         return match ($constant) {
 
-            'max' => $context['max'] ?? throw new Exception('Context value max not found.'),
+            'min_i' => $context['min_i'],
+            'max_i' => $context['max_i'],
+            'min_j' => $context['min_j'],
+            'max_j' => $context['max_j'],
 
-            'min' => $context['min'] ?? throw new Exception('Context value min not found.'),
-
-            default => throw new Exception("Unknown constant {$constant}")
+            default =>
+                throw new Exception("Unknown constant {$constant}")
         };
     }
 }

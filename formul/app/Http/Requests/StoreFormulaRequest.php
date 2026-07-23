@@ -19,11 +19,8 @@ class StoreFormulaRequest extends FormRequest
         return [
 
             'window_type_id' => ['required','exists:window_types,id'],
-            // 'name' => ['required','string'],
-            // 'code' => ['required','string'],
             'scop' => ['required','string'],
             'output_variable_id' => ['required','exists:variables,id'],
-            'execution_order' => ['required','integer'],
             'formula_tokens' => ['required','array','min:1'],
             'condition_tokens' => ['nullable','array','min:1'],
         ];

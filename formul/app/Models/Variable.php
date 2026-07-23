@@ -10,5 +10,11 @@ class Variable extends Model
         'title',
         'code',
         'type',
+        'default_value',
+        'window_type_id'
+    ];
+
+    protected $casts = [
+        'default_value'=>'float'
     ];
 }

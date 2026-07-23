@@ -4,12 +4,17 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Services\Formula\FormulaService;
+use App\Services\Formula\FormulaSelector;
 use App\Services\Condition\ConditionService;
 use App\Services\Formula\FormulaEvaluator;
 use App\Http\Requests\StoreFormulaRequest;
 use App\Services\Formula\ExpressionTreeService;
+use App\Services\Formula\FormulaDependencyValidator;
 use App\Models\Formula;
+use App\Models\FormulaDependency;
+
 use App\Services\Condition\ConditionEvaluator;
+use App\Services\Formula\FormulaExecutionPlanner;
 use Illuminate\Support\Facades\DB;
 
 use Illuminate\Http\Request;
@@ -120,5 +125,142 @@ class FormulController extends Controller
         }
 
         return $result;
+    }
+
+    public function selectFormulas(Request $request,FormulaSelector $selector, FormulaExecutionPlanner $planner) {
+
+        $formulas = Formula::where('window_type_id', $request->window_type_id)->where('is_active', true)->get();
+
+        $dependencies = FormulaDependency::whereIn(
+                'formula_id',
+                $formulas->pluck('id')
+            )
+            ->where('type', 'input')
+            ->get()
+            ->groupBy('formula_id');
+
+            $selected = $selector->select(
+                formulas: $formulas,
+                sections: $request->sections,
+                rows: $request->rows,
+                columns: $request->columns
+            );
+
+        $planned = $planner->plan(
+
+            selectedSections: $selected,
+
+            dependencies: $dependencies
+
+        );
+
+        return response()->json(
+
+            collect($planned)->map(function ($item) {
+
+                return [
+
+                    'section' => $item['section'],
+
+                    'execution_plan' => collect($item['formulas'])->map(function ($formula) {
+
+                        return [
+
+                            'id' => $formula->id,
+
+                            'expression' =>
+                                $formula->resultVariable->code .
+                                ' = ' .
+                                ExpressionTreeService::toExpression(
+                                    $formula->expression_json
+                                ),
+
+                        ];
+
+                    }),
+
+                ];
+
+            })
+
+        );
+    }
+
+    
+    public function selectFormulasWithValidator(
+        Request $request,
+        FormulaSelector $selector, 
+        FormulaExecutionPlanner $planner,
+        FormulaDependencyValidator $validator
+        
+        ) {
+
+        $formulas = Formula::where('window_type_id', $request->window_type_id)->where('is_active', true)->get();
+
+        $dependencies = FormulaDependency::whereIn(
+                'formula_id',
+                $formulas->pluck('id')
+            )
+            ->where('type', 'input')
+            ->get()
+            ->groupBy('formula_id');
+
+            $selected = $selector->select(
+                formulas: $formulas,
+                sections: $request->sections,
+                rows: $request->rows,
+                columns: $request->columns
+            );
+        
+        $planned = $planner->plan(
+            selectedSections: $selected,
+            dependencies: $dependencies
+        );
+
+        
+
+        foreach ($planned as $index => $section) {
+
+            $validator->validate(
+
+                executionPlan: $section['formulas'],
+
+                dependencies: $dependencies,
+
+                variables: $request->sections[$index]['variables']
+
+            );
+        }
+
+        return response()->json(
+
+            collect($planned)->map(function ($item) {
+
+                return [
+
+                    'section' => $item['section'],
+
+                    'execution_plan' => collect($item['formulas'])->map(function ($formula) {
+
+                        return [
+
+                            'id' => $formula->id,
+
+                            'expression' =>
+                                $formula->resultVariable->code .
+                                ' = ' .
+                                ExpressionTreeService::toExpression(
+                                    $formula->expression_json
+                                ),
+
+                        ];
+
+                    }),
+
+                ];
+
+            })
+
+        );
     }
 }
